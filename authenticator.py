@@ -57,6 +57,8 @@ def detect_gender_and_age(faceNet, ageNet, genderNet, frame):
         return resultImg, None, None
 
     padding = 20
+    gender = None
+    age = None
     for faceBox in faceBoxes:
         face = frame[max(0, faceBox[1] - padding): min(faceBox[3] + padding, frame.shape[0] - 1),
                      max(0, faceBox[0] - padding): min(faceBox[2] + padding, frame.shape[1] - 1)]
@@ -72,9 +74,7 @@ def detect_gender_and_age(faceNet, ageNet, genderNet, frame):
 
         cv2.putText(resultImg, f'{gender}, {age}', (faceBox[0], faceBox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2, cv2.LINE_AA)
 
-        return resultImg, gender, age
-
-    return resultImg, None, None
+    return resultImg, gender, age
 
 class SignUpApp(tk.Tk):
     def __init__(self):
@@ -153,20 +153,34 @@ class SignUpApp(tk.Tk):
             
             resultImg, gender, age = detect_gender_and_age(self.faceNet, self.ageNet, self.genderNet, frame)
 
-            if gender == 'Male':
+
+            if gender == 'Female':
                 verified = True
+
+                resultImg, faceBoxes = highlightFace(self.faceNet, frame, conf_threshold=0.7)
+                for faceBox in faceBoxes:
+                    cv2.rectangle(resultImg, (faceBox[0], faceBox[1]), (faceBox[2], faceBox[3]), (0, 255, 0), 2)
+                cv2.imshow("Real-time gender detection", resultImg)
+                cv2.waitKey(3000)  
+                break
+            else:
+
+                resultImg, faceBoxes = highlightFace(self.faceNet, frame, conf_threshold=0.7)
+                for faceBox in faceBoxes:
+                    cv2.rectangle(resultImg, (faceBox[0], faceBox[1]), (faceBox[2], faceBox[3]), (0, 0, 255), 2)
+
 
             cv2.imshow("Real-time gender detection", resultImg)
 
-            if verified:
-                break
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
+
         webcam.release()
         cv2.destroyAllWindows()
 
+        # Provide feedback based on verification result
         if verified:
             messagebox.showinfo("Verification", "Verification complete! You may proceed.")
             self.verified = True
